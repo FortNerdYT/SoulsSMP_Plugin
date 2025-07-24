@@ -9,6 +9,7 @@ public class SoulPlugin extends JavaPlugin {
     private SoulManager soulManager;
     private CooldownManager cooldownManager;
     private EffectManager effectManager;
+    private ResourcePackManager resourcePackManager;
     
     @Override
     public void onEnable() {
@@ -19,6 +20,7 @@ public class SoulPlugin extends JavaPlugin {
         cooldownManager = new CooldownManager();
         effectManager = new EffectManager(this);
         soulManager = new SoulManager(this, effectManager, cooldownManager);
+        resourcePackManager = new ResourcePackManager(this);
         
         // Register event listeners
         registerListeners();
@@ -27,6 +29,12 @@ public class SoulPlugin extends JavaPlugin {
         getCommand("souls").setExecutor(new SoulCommand(this, soulManager));
         
         getLogger().info("SoulPlugin has been enabled!");
+        
+        if (resourcePackManager.hasResourcePack()) {
+            getLogger().info("Resource pack configured and ready!");
+        } else {
+            getLogger().warning("No resource pack URL configured. Soul textures will use default Minecraft textures.");
+        }
     }
     
     @Override
@@ -45,6 +53,7 @@ public class SoulPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerCombatListener(soulManager), this);
         getServer().getPluginManager().registerEvents(new PlayerMoveListener(soulManager, this), this);
         getServer().getPluginManager().registerEvents(new PlayerJoinQuitListener(effectManager), this);
+        getServer().getPluginManager().registerEvents(resourcePackManager, this);
     }
     
     public SoulManager getSoulManager() {
@@ -57,5 +66,9 @@ public class SoulPlugin extends JavaPlugin {
     
     public EffectManager getEffectManager() {
         return effectManager;
+    }
+    
+    public ResourcePackManager getResourcePackManager() {
+        return resourcePackManager;
     }
 }

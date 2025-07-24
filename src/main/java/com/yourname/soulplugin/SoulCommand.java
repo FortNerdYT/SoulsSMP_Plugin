@@ -34,12 +34,14 @@ public class SoulCommand implements CommandExecutor {
             sender.sendMessage("§e/souls reload §7- Reload the plugin configuration");
             sender.sendMessage("§e/souls give <player> <soul> §7- Give a soul to a player");
             sender.sendMessage("§e/souls list §7- List all soul types");
+            sender.sendMessage("§e/souls resourcepack <player> §7- Send resource pack to a player");
             return true;
         }
         
         switch (args[0].toLowerCase()) {
             case "reload":
                 plugin.reloadConfig();
+                plugin.getResourcePackManager().reloadConfig();
                 sender.sendMessage("§aConfiguration reloaded!");
                 break;
                 
@@ -74,6 +76,23 @@ public class SoulCommand implements CommandExecutor {
                     sender.sendMessage("§7- " + soulType.getDisplayName() + " §7(" + 
                                      soulType.getRarity().getDisplayName() + "§7)");
                 }
+                break;
+                
+            case "resourcepack":
+            case "rp":
+                if (args.length < 2) {
+                    sender.sendMessage("§cUsage: /souls resourcepack <player>");
+                    return true;
+                }
+                
+                Player rpTarget = Bukkit.getPlayer(args[1]);
+                if (rpTarget == null) {
+                    sender.sendMessage("§cPlayer not found!");
+                    return true;
+                }
+                
+                plugin.getResourcePackManager().sendResourcePack(rpTarget);
+                sender.sendMessage("§aResource pack sent to " + rpTarget.getName());
                 break;
                 
             default:

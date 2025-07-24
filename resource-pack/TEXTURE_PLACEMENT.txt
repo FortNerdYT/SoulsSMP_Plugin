@@ -1,0 +1,28 @@
+TEXTURE PLACEMENT GUIDE
+======================
+
+Place your custom soul texture files (.png format, 16x16 pixels) in this directory:
+resource-pack/assets/minecraft/textures/item/souls/
+
+Required files:
+- strength_soul.png
+- mace_soul.png
+- sea_soul.png
+- resistance_soul.png
+- regeneration_soul.png
+- dash_soul.png
+- absorption_soul.png
+- haste_soul.png
+- frost_soul.png
+- vampire_soul.png
+- phantom_soul.png
+- saturation_soul.png
+- ender_dragon_soul.png
+- wither_soul.png
+- warden_soul.png
+
+After placing your textures:
+1. Zip the entire resource-pack folder
+2. Upload to a file hosting service
+3. Configure the URL in config.yml
+4. Reload the plugin with /souls reload

@@ -1,0 +1,14 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "item/cake"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 1012
+      },
+      "model": "item/souls/saturation_soul"
+    }
+  ]
+}

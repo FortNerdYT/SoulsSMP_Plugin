@@ -1,0 +1,14 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "item/echo_shard"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 2003
+      },
+      "model": "item/souls/warden_soul"
+    }
+  ]
+}

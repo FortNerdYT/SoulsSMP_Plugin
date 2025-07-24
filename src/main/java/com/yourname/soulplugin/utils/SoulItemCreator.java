@@ -22,6 +22,9 @@ public class SoulItemCreator {
             // Set display name
             meta.setDisplayName(soulType.getDisplayName());
             
+            // Set custom model data for resource pack
+            meta.setCustomModelData(soulType.getCustomModelData());
+            
             // Set lore
             List<String> lore = Arrays.asList(
                 "§7Rarity: " + soulType.getRarity().getDisplayName(),

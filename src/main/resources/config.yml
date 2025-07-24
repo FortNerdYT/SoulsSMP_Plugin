@@ -1,5 +1,14 @@
 # Soul Plugin Configuration
 
+# Resource Pack Configuration
+resource-pack:
+  # URL to your resource pack (leave empty to disable)
+  url: ""
+  # SHA-1 hash of your resource pack (optional but recommended)
+  hash: ""
+  # Force players to use the resource pack (kick if declined)
+  force: false
+
 # Drop chances for soul rarities (in percentages)
 drop-chances:
   common: 20.0

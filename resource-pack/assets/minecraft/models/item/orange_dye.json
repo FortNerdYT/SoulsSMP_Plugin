@@ -1,0 +1,20 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "item/orange_dye"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 1004
+      },
+      "model": "item/souls/resistance_soul"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 1008
+      },
+      "model": "item/souls/haste_soul"
+    }
+  ]
+}
