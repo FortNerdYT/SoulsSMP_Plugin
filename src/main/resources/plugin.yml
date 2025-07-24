@@ -1,0 +1,21 @@
+name: SoulPlugin
+version: '1.0.0'
+main: com.yourname.soulplugin.SoulPlugin
+api-version: '1.21'
+author: YourName
+description: A plugin that adds collectible souls with special abilities
+website: https://github.com/yourname/soul-plugin
+
+permissions:
+  soulplugin.admin:
+    description: Allows access to admin commands
+    default: op
+  soulplugin.use:
+    description: Allows using souls
+    default: true
+
+commands:
+  souls:
+    description: Main soul plugin command
+    usage: /souls [reload|give|list]
+    permission: soulplugin.admin

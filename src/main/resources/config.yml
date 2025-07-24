@@ -1,0 +1,27 @@
+# Soul Plugin Configuration
+
+# Drop chances for soul rarities (in percentages)
+drop-chances:
+  common: 20.0
+  rare: 35.0
+  mythic: 20.0
+  god-tier: 5.0
+
+# Cooldowns (in seconds)
+cooldowns:
+  dash-ability: 30
+  regeneration-heal: 180
+  phantom-invisibility: 180
+
+# Effect durations (in seconds)
+durations:
+  mining-fatigue: 60
+  slowness: 2
+  invisibility: 30
+
+# Messages
+messages:
+  soul-consumed: "&7You have consumed a &%rarity_color%%soul_name% Soul&7!"
+  soul-dropped: "&7A &%rarity_color%%soul_name% Soul &7has been dropped!"
+  ability-cooldown: "&cThis ability is on cooldown for &7%time% &cseconds!"
+  ability-used: "&aYou used &%ability_name%&a!"
