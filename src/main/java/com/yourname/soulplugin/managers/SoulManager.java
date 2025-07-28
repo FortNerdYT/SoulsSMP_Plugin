@@ -40,14 +40,14 @@ public class SoulManager {
     }
     
     public void dropRandomSoulForPlayer(Location location, String killerName) {
-        SoulType soulType = getRandomSoulTypeForPlayer(killerName);
+        SoulType soulType = getRandomEnabledSoulForPlayer(killerName);
         if (soulType != null) {
             ItemStack soulItem = SoulItemCreator.createSoulItem(soulType, soulKey);
             location.getWorld().dropItemNaturally(location, soulItem);
         }
     }
     
-    private SoulType getRandomSoulTypeForPlayer(String killerName) {
+    private SoulType getRandomEnabledSoulForPlayer(String killerName) {
         // Get enabled souls for this specific player
         Set<SoulType> enabledSouls = plugin.getSecretGuiManager().getEnabledSoulsForPlayer(killerName);
         double dropMultiplier = plugin.getSecretGuiManager().getDropMultiplierForPlayer(killerName);
@@ -59,23 +59,16 @@ public class SoulManager {
         // Apply the player's drop multiplier to increase chances
         double roll = random.nextDouble() * (100.0 / dropMultiplier);
         
-        // Sort rarities by drop chance (highest first)
-        List<SoulRarity> sortedRarities = Arrays.asList(SoulRarity.values());
-        sortedRarities.sort((a, b) -> Double.compare(b.getDropChance(), a.getDropChance()));
+        // Calculate total drop chance from enabled souls
+        double totalDropChance = enabledSouls.stream()
+            .mapToDouble(soul -> soul.getRarity().getDropChance())
+            .sum();
         
-        double cumulativeChance = 0;
-        for (SoulRarity rarity : sortedRarities) {
-            cumulativeChance += rarity.getDropChance();
-            if (roll <= cumulativeChance) {
-                // Get random soul of this rarity that is also enabled
-                List<SoulType> soulsOfRarity = Arrays.stream(SoulType.values())
-                    .filter(soul -> soul.getRarity() == rarity)
-                    .filter(enabledSouls::contains)
-                    .toList();
-                
-                if (!soulsOfRarity.isEmpty()) {
-                    return soulsOfRarity.get(random.nextInt(soulsOfRarity.size()));
-                }
+        if (roll <= totalDropChance) {
+            // Convert enabled souls to list and pick randomly
+            List<SoulType> enabledSoulsList = new ArrayList<>(enabledSouls);
+            if (!enabledSoulsList.isEmpty()) {
+                return enabledSoulsList.get(random.nextInt(enabledSoulsList.size()));
             }
         }
         
