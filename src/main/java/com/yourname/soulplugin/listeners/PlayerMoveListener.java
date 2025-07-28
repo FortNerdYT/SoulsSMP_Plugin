@@ -86,10 +86,10 @@ public class PlayerMoveListener implements Listener {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 300, 0)); // 15 seconds Regen I
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 300, 0)); // 15 seconds Speed I
                 
-                player.sendMessage("§5🐉 DRAGON RAGE ACTIVATED! 🐉");
+                player.sendMessage("§5 DRAGON RAGE ACTIVATED!");
                 
-                // Set cooldown (5:00 = 300 seconds)
-                soulManager.getCooldownManager().setCooldown(player, "dragon_rage", 300);
+                // Set cooldown (3:00 = 180 seconds)
+                soulManager.getCooldownManager().setCooldown(player, "dragon_rage", 180);
             }
         }
         

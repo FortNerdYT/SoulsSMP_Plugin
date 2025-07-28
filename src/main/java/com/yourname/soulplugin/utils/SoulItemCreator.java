@@ -17,10 +17,12 @@ public class SoulItemCreator {
     public static ItemStack createSoulItem(SoulType soulType, NamespacedKey soulKey) {
         ItemStack item = new ItemStack(soulType.getMaterial());
         ItemMeta meta = item.getItemMeta();
+
         
         if (meta != null) {
             // Set display name
-            meta.setDisplayName(soulType.getDisplayName());
+            meta.setDisplayName(soulType.getDisplayName());            
+            meta.setCustomModelData(soulType.getCMD());
             
             // Set lore
             List<String> lore = Arrays.asList(
