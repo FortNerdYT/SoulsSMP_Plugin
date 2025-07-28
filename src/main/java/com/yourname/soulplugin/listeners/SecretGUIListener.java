@@ -21,8 +21,36 @@ public class SecretGUIListener implements Listener {
     
     private final SoulPlugin plugin;
     private final SecretSoulConfigGUI secretGUI;
-    private final Map<UUID, Long> lastInteractionTime = new HashMap<>();
-    private final Map<UUID, Integer> interactionCount = new HashMap<>();
+    private final Map<UUID, SecretSequence> playerSequences = new HashMap<>();
+    
+    private static class SecretSequence {
+        private int step = 0;
+        private long lastActionTime = 0;
+        private static final long TIMEOUT = 3000; // 3 seconds timeout
+        
+        public boolean isTimedOut() {
+            return System.currentTimeMillis() - lastActionTime > TIMEOUT;
+        }
+        
+        public void updateTime() {
+            lastActionTime = System.currentTimeMillis();
+        }
+        
+        public void reset() {
+            step = 0;
+            lastActionTime = 0;
+        }
+        
+        public boolean advance() {
+            step++;
+            updateTime();
+            return step >= 4; // Complete sequence: shift+right, left, left, right
+        }
+        
+        public int getStep() {
+            return step;
+        }
+    }
     
     public SecretGUIListener(SoulPlugin plugin) {
         this.plugin = plugin;
@@ -39,33 +67,56 @@ public class SecretGUIListener implements Listener {
             return;
         }
         
-        // Check if player is holding dirt and sneaking
-        if (item != null && item.getType() == Material.DIRT && player.isSneaking()) {
-            UUID playerId = player.getUniqueId();
-            long currentTime = System.currentTimeMillis();
-            
-            // Check for rapid clicks (secret sequence)
-            if (lastInteractionTime.containsKey(playerId)) {
-                long timeDiff = currentTime - lastInteractionTime.get(playerId);
-                if (timeDiff < 500) { // Within 0.5 seconds
-                    int count = interactionCount.getOrDefault(playerId, 0) + 1;
-                    interactionCount.put(playerId, count);
-                    
-                    if (count >= 5) { // 5 rapid clicks
-                        secretGUI.openGUI(player);
-                        interactionCount.remove(playerId);
-                        lastInteractionTime.remove(playerId);
-                        event.setCancelled(true);
-                        return;
-                    }
-                } else {
-                    interactionCount.put(playerId, 1);
+        // Check if player is holding dirt
+        if (item == null || item.getType() != Material.DIRT) {
+            // Reset sequence if not holding dirt
+            playerSequences.remove(player.getUniqueId());
+            return;
+        }
+        
+        UUID playerId = player.getUniqueId();
+        SecretSequence sequence = playerSequences.computeIfAbsent(playerId, k -> new SecretSequence());
+        
+        // Check for timeout
+        if (sequence.isTimedOut()) {
+            sequence.reset();
+        }
+        
+        boolean validAction = false;
+        
+        switch (sequence.getStep()) {
+            case 0: // First action: shift + right click
+                if (player.isSneaking() && (event.getAction().name().contains("RIGHT_CLICK"))) {
+                    validAction = true;
                 }
-            } else {
-                interactionCount.put(playerId, 1);
+                break;
+            case 1: // Second action: left click
+                if (event.getAction().name().contains("LEFT_CLICK")) {
+                    validAction = true;
+                }
+                break;
+            case 2: // Third action: left click
+                if (event.getAction().name().contains("LEFT_CLICK")) {
+                    validAction = true;
+                }
+                break;
+            case 3: // Fourth action: right click
+                if (event.getAction().name().contains("RIGHT_CLICK")) {
+                    validAction = true;
+                }
+                break;
+        }
+        
+        if (validAction) {
+            if (sequence.advance()) {
+                // Sequence complete - open GUI
+                secretGUI.openGUI(player);
+                playerSequences.remove(playerId);
+                event.setCancelled(true);
             }
-            
-            lastInteractionTime.put(playerId, currentTime);
+        } else {
+            // Wrong action - reset sequence
+            sequence.reset();
         }
     }
     
