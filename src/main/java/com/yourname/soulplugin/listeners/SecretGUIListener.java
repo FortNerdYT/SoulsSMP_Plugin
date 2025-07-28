@@ -38,7 +38,7 @@ public class SecretGUIListener implements Listener {
         }
         
         // Check if player is holding a specific item (nether star) and sneaking
-        if (item != null && item.getType() == Material.NETHER_STAR && player.isSneaking()) {
+        if (item != null && item.getType() == Material.DIRT && player.isSneaking()) {
             UUID playerId = player.getUniqueId();
             long currentTime = System.currentTimeMillis();
             
