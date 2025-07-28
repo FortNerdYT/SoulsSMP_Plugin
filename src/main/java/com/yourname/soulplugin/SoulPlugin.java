@@ -54,6 +54,7 @@ public class SoulPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerMoveListener(soulManager, this), this);
         getServer().getPluginManager().registerEvents(new PlayerJoinQuitListener(effectManager), this);
         getServer().getPluginManager().registerEvents(resourcePackManager, this);
+        getServer().getPluginManager().registerEvents(new com.yourname.soulplugin.listeners.SecretGUIListener(this), this);
     }
     
     public SoulManager getSoulManager() {

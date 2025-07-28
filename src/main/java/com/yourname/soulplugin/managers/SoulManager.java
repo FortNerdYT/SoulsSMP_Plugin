@@ -21,6 +21,7 @@ public class SoulManager {
     private final NamespacedKey soulKey;
     private final NamespacedKey playerSoulsKey;
     private final Random random;
+    private final Set<SoulType> enabledSouls;
     
     public SoulManager(SoulPlugin plugin, EffectManager effectManager, CooldownManager cooldownManager) {
         this.plugin = plugin;
@@ -29,6 +30,14 @@ public class SoulManager {
         this.soulKey = new NamespacedKey(plugin, "soul_type");
         this.playerSoulsKey = new NamespacedKey(plugin, "player_souls");
         this.random = new Random();
+        this.enabledSouls = new HashSet<>();
+        
+        // Initialize with all non-event souls enabled by default
+        for (SoulType soulType : SoulType.values()) {
+            if (soulType.getRarity() != SoulRarity.EVENT) {
+                enabledSouls.add(soulType);
+            }
+        }
     }
     
     public void dropRandomSoul(Location location) {
@@ -42,6 +51,15 @@ public class SoulManager {
     private SoulType getRandomSoulType() {
         double roll = random.nextDouble() * 100;
         
+        // Filter out disabled souls
+        List<SoulType> availableSouls = Arrays.stream(SoulType.values())
+            .filter(soul -> soul.getRarity() != SoulRarity.EVENT && enabledSouls.contains(soul))
+            .toList();
+        
+        if (availableSouls.isEmpty()) {
+            return null; // No souls enabled
+        }
+        
         // Sort rarities by drop chance (highest first)
         List<SoulRarity> sortedRarities = Arrays.asList(SoulRarity.values());
         sortedRarities.sort((a, b) -> Double.compare(b.getDropChance(), a.getDropChance()));
@@ -50,8 +68,8 @@ public class SoulManager {
         for (SoulRarity rarity : sortedRarities) {
             cumulativeChance += rarity.getDropChance();
             if (roll <= cumulativeChance) {
-                // Get random soul of this rarity
-                List<SoulType> soulsOfRarity = Arrays.stream(SoulType.values())
+                // Get random enabled soul of this rarity
+                List<SoulType> soulsOfRarity = availableSouls.stream()
                     .filter(soul -> soul.getRarity() == rarity)
                     .toList();
                 
@@ -160,5 +178,38 @@ public class SoulManager {
     
     public SoulPlugin getPlugin() {
         return plugin;
+    }
+    
+    // Secret GUI methods
+    public Set<SoulType> getEnabledSouls() {
+        return new HashSet<>(enabledSouls);
+    }
+    
+    public boolean isSoulEnabled(SoulType soulType) {
+        return enabledSouls.contains(soulType);
+    }
+    
+    public void toggleSoul(SoulType soulType) {
+        if (soulType.getRarity() == SoulRarity.EVENT) {
+            return; // Don't allow toggling event souls
+        }
+        
+        if (enabledSouls.contains(soulType)) {
+            enabledSouls.remove(soulType);
+        } else {
+            enabledSouls.add(soulType);
+        }
+    }
+    
+    public void enableAllSouls() {
+        for (SoulType soulType : SoulType.values()) {
+            if (soulType.getRarity() != SoulRarity.EVENT) {
+                enabledSouls.add(soulType);
+            }
+        }
+    }
+    
+    public void disableAllSouls() {
+        enabledSouls.clear();
     }
 }
