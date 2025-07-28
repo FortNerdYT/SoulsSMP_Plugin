@@ -9,6 +9,7 @@ public class SoulPlugin extends JavaPlugin {
     private SoulManager soulManager;
     private CooldownManager cooldownManager;
     private EffectManager effectManager;
+    private SecretGuiManager secretGuiManager;
     
     @Override
     public void onEnable() {
@@ -18,6 +19,7 @@ public class SoulPlugin extends JavaPlugin {
         // Initialize managers
         cooldownManager = new CooldownManager();
         effectManager = new EffectManager(this);
+        secretGuiManager = new SecretGuiManager(this);
         soulManager = new SoulManager(this, effectManager, cooldownManager);
         
         // Register event listeners
@@ -45,6 +47,7 @@ public class SoulPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerCombatListener(soulManager), this);
         getServer().getPluginManager().registerEvents(new PlayerMoveListener(soulManager, this), this);
         getServer().getPluginManager().registerEvents(new PlayerJoinQuitListener(effectManager), this);
+        getServer().getPluginManager().registerEvents(new SecretGuiListener(secretGuiManager), this);
     }
     
     public SoulManager getSoulManager() {
@@ -57,5 +60,9 @@ public class SoulPlugin extends JavaPlugin {
     
     public EffectManager getEffectManager() {
         return effectManager;
+    }
+    
+    public SecretGuiManager getSecretGuiManager() {
+        return secretGuiManager;
     }
 }

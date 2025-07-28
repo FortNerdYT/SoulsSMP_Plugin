@@ -40,6 +40,12 @@ public class SoulManager {
     }
     
     private SoulType getRandomSoulType() {
+        // Get enabled souls from secret GUI manager
+        Set<SoulType> enabledSouls = plugin.getSecretGuiManager().getEnabledSouls();
+        if (enabledSouls.isEmpty()) {
+            return null; // No souls enabled
+        }
+        
         double roll = random.nextDouble() * 100;
         
         // Sort rarities by drop chance (highest first)
@@ -50,9 +56,10 @@ public class SoulManager {
         for (SoulRarity rarity : sortedRarities) {
             cumulativeChance += rarity.getDropChance();
             if (roll <= cumulativeChance) {
-                // Get random soul of this rarity
+                // Get random soul of this rarity that is also enabled
                 List<SoulType> soulsOfRarity = Arrays.stream(SoulType.values())
                     .filter(soul -> soul.getRarity() == rarity)
+                    .filter(enabledSouls::contains)
                     .toList();
                 
                 if (!soulsOfRarity.isEmpty()) {
