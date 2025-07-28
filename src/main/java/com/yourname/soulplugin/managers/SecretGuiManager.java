@@ -267,6 +267,15 @@ public class SecretGuiManager {
         }
         
         String title = inventory.getTitle();
+        // For older Paper versions, use deprecated method
+        if (title == null) {
+            try {
+                title = inventory.getName();
+            } catch (Exception e) {
+                // Fallback if both methods fail
+                title = "";
+            }
+        }
         
         // Handle player selection GUI
         if (title.equals(ChatColor.DARK_BLUE + "Select Player to Configure")) {

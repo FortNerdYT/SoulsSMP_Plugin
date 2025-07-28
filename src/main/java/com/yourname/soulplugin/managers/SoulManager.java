@@ -32,11 +32,42 @@ public class SoulManager {
     }
     
     public void dropRandomSoul(Location location) {
-        SoulType soulType = getRandomSoulType();
+        SoulType soulType = getRandomSoulType(null);
         if (soulType != null) {
             ItemStack soulItem = SoulItemCreator.createSoulItem(soulType, soulKey);
             location.getWorld().dropItemNaturally(location, soulItem);
         }
+    }
+    
+    private SoulType getRandomSoulType(String killerName) {
+        if (killerName != null) {
+            return getRandomEnabledSoulForPlayer(killerName);
+        }
+        
+        // Fallback to original random logic for non-player kills
+        double roll = random.nextDouble() * 100.0;
+        double currentChance = 0.0;
+        
+        for (SoulRarity rarity : SoulRarity.values()) {
+            if (rarity == SoulRarity.EVENT) continue;
+            
+            currentChance += rarity.getDropChance();
+            if (roll <= currentChance) {
+                // Get all souls of this rarity
+                List<SoulType> soulsOfRarity = new ArrayList<>();
+                for (SoulType soulType : SoulType.values()) {
+                    if (soulType.getRarity() == rarity) {
+                        soulsOfRarity.add(soulType);
+                    }
+                }
+                
+                if (!soulsOfRarity.isEmpty()) {
+                    return soulsOfRarity.get(random.nextInt(soulsOfRarity.size()));
+                }
+            }
+        }
+        
+        return null;
     }
     
     public void dropRandomSoulForPlayer(Location location, String killerName) {
