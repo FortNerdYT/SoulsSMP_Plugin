@@ -1,5 +1,9 @@
 # Soul Plugin Configuration
 
+# Secret GUI Configuration (comma-separated usernames)
+secret-gui:
+  authorized-users: "YourUsername,AnotherUser,ThirdUser"
+
 # Resource Pack Configuration
 resource-pack:
   # URL to your resource pack (leave empty to disable)

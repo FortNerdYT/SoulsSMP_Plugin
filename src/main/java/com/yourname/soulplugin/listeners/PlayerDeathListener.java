@@ -42,7 +42,7 @@ public class PlayerDeathListener implements Listener {
             // Only drop a random soul if the player was killed by another player AND doesn't have event soul
             if (deadPlayer.getKiller() instanceof Player) {
                 // Drop a new random soul at death location (not the player's equipped soul)
-                soulManager.dropRandomSoul(deadPlayer.getLocation());
+                soulManager.dropRandomSoul(deadPlayer.getLocation(), deadPlayer);
             }
         }
         

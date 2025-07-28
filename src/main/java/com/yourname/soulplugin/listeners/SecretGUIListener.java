@@ -3,10 +3,12 @@ package com.yourname.soulplugin.listeners;
 import com.yourname.soulplugin.SoulPlugin;
 import com.yourname.soulplugin.enums.SoulType;
 import com.yourname.soulplugin.gui.SecretSoulConfigGUI;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
@@ -37,7 +39,7 @@ public class SecretGUIListener implements Listener {
             return;
         }
         
-        // Check if player is holding a specific item (nether star) and sneaking
+        // Check if player is holding dirt and sneaking
         if (item != null && item.getType() == Material.DIRT && player.isSneaking()) {
             UUID playerId = player.getUniqueId();
             long currentTime = System.currentTimeMillis();
@@ -73,59 +75,120 @@ public class SecretGUIListener implements Listener {
             return;
         }
         
-        if (!event.getView().getTitle().equals("§8§lSecret Soul Configuration")) {
-            return;
-        }
+        String title = event.getView().getTitle();
         
-        event.setCancelled(true);
-        
-        if (!secretGUI.isAuthorized(player)) {
-            player.closeInventory();
-            return;
-        }
-        
-        ItemStack clickedItem = event.getCurrentItem();
-        if (clickedItem == null || !clickedItem.hasItemMeta()) {
-            return;
-        }
-        
-        String displayName = clickedItem.getItemMeta().getDisplayName();
-        
-        // Handle control buttons
-        if (displayName.equals("§a§lEnable All Souls")) {
-            plugin.getSoulManager().enableAllSouls();
-            player.sendMessage("§a§lAll souls have been enabled!");
-            secretGUI.openGUI(player); // Refresh GUI
-            return;
-        }
-        
-        if (displayName.equals("§c§lDisable All Souls")) {
-            plugin.getSoulManager().disableAllSouls();
-            player.sendMessage("§c§lAll souls have been disabled!");
-            secretGUI.openGUI(player); // Refresh GUI
-            return;
-        }
-        
-        if (displayName.equals("§c§lClose")) {
-            player.closeInventory();
-            return;
-        }
-        
-        // Handle soul toggles
-        for (SoulType soulType : SoulType.values()) {
-            if (soulType.getRarity().name().equals("EVENT")) {
-                continue;
+        // Handle main player list GUI
+        if (title.equals("§8§lPlayer Soul Configuration")) {
+            event.setCancelled(true);
+            
+            if (!secretGUI.isAuthorized(player)) {
+                player.closeInventory();
+                return;
             }
             
-            if (displayName.contains(soulType.name())) {
-                boolean wasEnabled = plugin.getSoulManager().isSoulEnabled(soulType);
-                plugin.getSoulManager().toggleSoul(soulType);
+            ItemStack clickedItem = event.getCurrentItem();
+            if (clickedItem == null || !clickedItem.hasItemMeta()) {
+                return;
+            }
+            
+            String displayName = clickedItem.getItemMeta().getDisplayName();
+            
+            if (displayName.equals("§c§lClose")) {
+                player.closeInventory();
+                return;
+            }
+            
+            // Handle player head clicks
+            if (clickedItem.getType() == Material.PLAYER_HEAD) {
+                String playerName = displayName.substring(2); // Remove "§e" prefix
+                Player targetPlayer = Bukkit.getPlayer(playerName);
                 
-                String status = wasEnabled ? "§cdisabled" : "§aenabled";
-                player.sendMessage("§7" + soulType.getDisplayName() + " §7has been " + status + "§7!");
+                if (targetPlayer != null) {
+                    if (event.getClick() == ClickType.LEFT) {
+                        // Open individual soul configuration
+                        secretGUI.openPlayerSoulGUI(player, targetPlayer);
+                    } else if (event.getClick() == ClickType.RIGHT) {
+                        // Enable all souls for this player
+                        plugin.getSoulManager().enableAllSoulsForPlayer(targetPlayer);
+                        player.sendMessage("§aEnabled all souls for " + targetPlayer.getName());
+                        secretGUI.openGUI(player); // Refresh GUI
+                    } else if (event.getClick() == ClickType.SHIFT_RIGHT) {
+                        // Disable all souls for this player
+                        plugin.getSoulManager().disableAllSoulsForPlayer(targetPlayer);
+                        player.sendMessage("§cDisabled all souls for " + targetPlayer.getName());
+                        secretGUI.openGUI(player); // Refresh GUI
+                    }
+                }
+            }
+            return;
+        }
+        
+        // Handle individual player soul configuration GUI
+        if (title.startsWith("§8§l") && title.endsWith("'s Souls")) {
+            event.setCancelled(true);
+            
+            if (!secretGUI.isAuthorized(player)) {
+                player.closeInventory();
+                return;
+            }
+            
+            String targetPlayerName = title.substring(4, title.length() - 8); // Extract player name
+            Player targetPlayer = Bukkit.getPlayer(targetPlayerName);
+            
+            if (targetPlayer == null) {
+                player.sendMessage("§cPlayer is no longer online!");
+                player.closeInventory();
+                return;
+            }
+            
+            ItemStack clickedItem = event.getCurrentItem();
+            if (clickedItem == null || !clickedItem.hasItemMeta()) {
+                return;
+            }
+            
+            String displayName = clickedItem.getItemMeta().getDisplayName();
+            
+            // Handle control buttons
+            if (displayName.equals("§a§lEnable All Souls")) {
+                plugin.getSoulManager().enableAllSoulsForPlayer(targetPlayer);
+                player.sendMessage("§aEnabled all souls for " + targetPlayer.getName());
+                secretGUI.openPlayerSoulGUI(player, targetPlayer); // Refresh GUI
+                return;
+            }
+            
+            if (displayName.equals("§c§lDisable All Souls")) {
+                plugin.getSoulManager().disableAllSoulsForPlayer(targetPlayer);
+                player.sendMessage("§cDisabled all souls for " + targetPlayer.getName());
+                secretGUI.openPlayerSoulGUI(player, targetPlayer); // Refresh GUI
+                return;
+            }
+            
+            if (displayName.equals("§e§lBack")) {
+                secretGUI.openGUI(player);
+                return;
+            }
+            
+            if (displayName.equals("§c§lClose")) {
+                player.closeInventory();
+                return;
+            }
+            
+            // Handle soul toggles
+            for (SoulType soulType : SoulType.values()) {
+                if (soulType.getRarity().name().equals("EVENT")) {
+                    continue;
+                }
                 
-                secretGUI.openGUI(player); // Refresh GUI
-                break;
+                if (displayName.contains(soulType.name())) {
+                    boolean wasDisabled = plugin.getSoulManager().isSoulDisabledForPlayer(targetPlayer, soulType);
+                    plugin.getSoulManager().toggleSoulForPlayer(targetPlayer, soulType);
+                    
+                    String status = wasDisabled ? "§aenabled" : "§cdisabled";
+                    player.sendMessage("§7" + soulType.getDisplayName() + " §7has been " + status + " §7for " + targetPlayer.getName());
+                    
+                    secretGUI.openPlayerSoulGUI(player, targetPlayer); // Refresh GUI
+                    break;
+                }
             }
         }
     }

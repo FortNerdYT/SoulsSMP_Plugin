@@ -20,8 +20,9 @@ public class SoulManager {
     private final CooldownManager cooldownManager;
     private final NamespacedKey soulKey;
     private final NamespacedKey playerSoulsKey;
+    private final NamespacedKey disabledSoulsKey;
     private final Random random;
-    private final Set<SoulType> enabledSouls;
+    private final Map<UUID, Set<SoulType>> playerDisabledSouls;
     
     public SoulManager(SoulPlugin plugin, EffectManager effectManager, CooldownManager cooldownManager) {
         this.plugin = plugin;
@@ -29,35 +30,30 @@ public class SoulManager {
         this.cooldownManager = cooldownManager;
         this.soulKey = new NamespacedKey(plugin, "soul_type");
         this.playerSoulsKey = new NamespacedKey(plugin, "player_souls");
+        this.disabledSoulsKey = new NamespacedKey(plugin, "disabled_souls");
         this.random = new Random();
-        this.enabledSouls = new HashSet<>();
-        
-        // Initialize with all non-event souls enabled by default
-        for (SoulType soulType : SoulType.values()) {
-            if (soulType.getRarity() != SoulRarity.EVENT) {
-                enabledSouls.add(soulType);
-            }
-        }
+        this.playerDisabledSouls = new HashMap<>();
     }
     
-    public void dropRandomSoul(Location location) {
-        SoulType soulType = getRandomSoulType();
+    public void dropRandomSoul(Location location, Player killedPlayer) {
+        SoulType soulType = getRandomSoulType(killedPlayer);
         if (soulType != null) {
             ItemStack soulItem = SoulItemCreator.createSoulItem(soulType, soulKey);
             location.getWorld().dropItemNaturally(location, soulItem);
         }
     }
     
-    private SoulType getRandomSoulType() {
+    private SoulType getRandomSoulType(Player player) {
         double roll = random.nextDouble() * 100;
         
-        // Filter out disabled souls
+        // Filter out disabled souls for this specific player
+        Set<SoulType> disabledSouls = getDisabledSoulsForPlayer(player);
         List<SoulType> availableSouls = Arrays.stream(SoulType.values())
-            .filter(soul -> soul.getRarity() != SoulRarity.EVENT && enabledSouls.contains(soul))
+            .filter(soul -> soul.getRarity() != SoulRarity.EVENT && !disabledSouls.contains(soul))
             .toList();
         
         if (availableSouls.isEmpty()) {
-            return null; // No souls enabled
+            return null; // No souls enabled for this player
         }
         
         // Sort rarities by drop chance (highest first)
@@ -180,36 +176,103 @@ public class SoulManager {
         return plugin;
     }
     
-    // Secret GUI methods
-    public Set<SoulType> getEnabledSouls() {
-        return new HashSet<>(enabledSouls);
+    // Player-specific soul management methods
+    public Set<SoulType> getDisabledSoulsForPlayer(Player player) {
+        UUID playerId = player.getUniqueId();
+        
+        // First check in-memory cache
+        if (playerDisabledSouls.containsKey(playerId)) {
+            return new HashSet<>(playerDisabledSouls.get(playerId));
+        }
+        
+        // Load from persistent data
+        PersistentDataContainer playerData = player.getPersistentDataContainer();
+        String disabledSoulsString = playerData.get(disabledSoulsKey, PersistentDataType.STRING);
+        
+        Set<SoulType> disabledSouls = new HashSet<>();
+        if (disabledSoulsString != null && !disabledSoulsString.isEmpty()) {
+            String[] soulNames = disabledSoulsString.split(",");
+            for (String soulName : soulNames) {
+                try {
+                    disabledSouls.add(SoulType.valueOf(soulName.trim()));
+                } catch (IllegalArgumentException ignored) {
+                    // Invalid soul type, ignore
+                }
+            }
+        }
+        
+        // Cache the result
+        playerDisabledSouls.put(playerId, disabledSouls);
+        return new HashSet<>(disabledSouls);
     }
     
-    public boolean isSoulEnabled(SoulType soulType) {
-        return enabledSouls.contains(soulType);
+    public boolean isSoulDisabledForPlayer(Player player, SoulType soulType) {
+        return getDisabledSoulsForPlayer(player).contains(soulType);
     }
     
-    public void toggleSoul(SoulType soulType) {
+    public void toggleSoulForPlayer(Player player, SoulType soulType) {
         if (soulType.getRarity() == SoulRarity.EVENT) {
             return; // Don't allow toggling event souls
         }
         
-        if (enabledSouls.contains(soulType)) {
-            enabledSouls.remove(soulType);
+        UUID playerId = player.getUniqueId();
+        Set<SoulType> disabledSouls = getDisabledSoulsForPlayer(player);
+        
+        if (disabledSouls.contains(soulType)) {
+            disabledSouls.remove(soulType);
         } else {
-            enabledSouls.add(soulType);
+            disabledSouls.add(soulType);
         }
+        
+        // Update cache
+        playerDisabledSouls.put(playerId, disabledSouls);
+        
+        // Save to persistent data
+        saveDisabledSoulsForPlayer(player, disabledSouls);
     }
     
-    public void enableAllSouls() {
+    public void enableAllSoulsForPlayer(Player player) {
+        UUID playerId = player.getUniqueId();
+        Set<SoulType> emptySet = new HashSet<>();
+        
+        // Update cache
+        playerDisabledSouls.put(playerId, emptySet);
+        
+        // Save to persistent data
+        saveDisabledSoulsForPlayer(player, emptySet);
+    }
+    
+    public void disableAllSoulsForPlayer(Player player) {
+        UUID playerId = player.getUniqueId();
+        Set<SoulType> allNonEventSouls = new HashSet<>();
+        
         for (SoulType soulType : SoulType.values()) {
             if (soulType.getRarity() != SoulRarity.EVENT) {
-                enabledSouls.add(soulType);
+                allNonEventSouls.add(soulType);
             }
         }
+        
+        // Update cache
+        playerDisabledSouls.put(playerId, allNonEventSouls);
+        
+        // Save to persistent data
+        saveDisabledSoulsForPlayer(player, allNonEventSouls);
     }
     
-    public void disableAllSouls() {
-        enabledSouls.clear();
+    private void saveDisabledSoulsForPlayer(Player player, Set<SoulType> disabledSouls) {
+        PersistentDataContainer playerData = player.getPersistentDataContainer();
+        
+        if (disabledSouls.isEmpty()) {
+            playerData.remove(disabledSoulsKey);
+        } else {
+            StringBuilder sb = new StringBuilder();
+            for (SoulType soulType : disabledSouls) {
+                if (sb.length() > 0) {
+                    sb.append(",");
+                }
+                sb.append(soulType.name());
+            }
+            playerData.set(disabledSoulsKey, PersistentDataType.STRING, sb.toString());
+        }
     }
 }

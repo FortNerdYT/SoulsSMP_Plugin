@@ -16,19 +16,24 @@ import java.util.Set;
 public class SecretSoulConfigGUI {
     
     private final SoulPlugin plugin;
-    private final Set<String> authorizedUsers;
     
     public SecretSoulConfigGUI(SoulPlugin plugin) {
         this.plugin = plugin;
-        this.authorizedUsers = new HashSet<>();
-        // Add authorized usernames here (case-sensitive)
-        authorizedUsers.add("YourUsername");
-        authorizedUsers.add("AdminUser");
-        authorizedUsers.add("SecretUser");
     }
     
     public boolean isAuthorized(Player player) {
-        return authorizedUsers.contains(player.getName());
+        String authorizedUsers = plugin.getConfig().getString("secret-gui.authorized-users", "");
+        if (authorizedUsers.isEmpty()) {
+            return false;
+        }
+        
+        String[] usernames = authorizedUsers.split(",");
+        for (String username : usernames) {
+            if (username.trim().equals(player.getName())) {
+                return true;
+            }
+        }
+        return false;
     }
     
     public void openGUI(Player player) {
@@ -36,10 +41,61 @@ public class SecretSoulConfigGUI {
             return;
         }
         
-        Inventory gui = Bukkit.createInventory(null, 54, "§8§lSecret Soul Configuration");
+        Inventory gui = Bukkit.createInventory(null, 54, "§8§lPlayer Soul Configuration");
         
-        // Get currently enabled souls
-        Set<SoulType> enabledSouls = plugin.getSoulManager().getEnabledSouls();
+        int slot = 0;
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            if (slot >= 45) break; // Leave space for control items
+            
+            ItemStack playerHead = new ItemStack(Material.PLAYER_HEAD);
+            ItemMeta meta = playerHead.getItemMeta();
+            
+            if (meta != null) {
+                Set<SoulType> disabledSouls = plugin.getSoulManager().getDisabledSoulsForPlayer(onlinePlayer);
+                int disabledCount = disabledSouls.size();
+                int totalSouls = (int) Arrays.stream(SoulType.values())
+                    .filter(soul -> soul.getRarity().name().equals("EVENT") == false)
+                    .count();
+                int enabledCount = totalSouls - disabledCount;
+                
+                meta.setDisplayName("§e" + onlinePlayer.getName());
+                meta.setLore(Arrays.asList(
+                    "§7Enabled Souls: §a" + enabledCount + "§7/§a" + totalSouls,
+                    "§7Disabled Souls: §c" + disabledCount,
+                    "",
+                    "§eLeft-click to configure souls",
+                    "§eRight-click to enable all souls",
+                    "§eShift+Right-click to disable all souls"
+                ));
+                
+                playerHead.setItemMeta(meta);
+            }
+            
+            gui.setItem(slot, playerHead);
+            slot++;
+        }
+        
+        // Add control items
+        ItemStack close = new ItemStack(Material.BARRIER);
+        ItemMeta closeMeta = close.getItemMeta();
+        if (closeMeta != null) {
+            closeMeta.setDisplayName("§c§lClose");
+            closeMeta.setLore(Arrays.asList("§7Click to close this menu"));
+            close.setItemMeta(closeMeta);
+        }
+        gui.setItem(53, close);
+        
+        player.openInventory(gui);
+    }
+    
+    public void openPlayerSoulGUI(Player admin, Player targetPlayer) {
+        if (!isAuthorized(admin)) {
+            return;
+        }
+        
+        Inventory gui = Bukkit.createInventory(null, 54, "§8§l" + targetPlayer.getName() + "'s Souls");
+        
+        Set<SoulType> disabledSouls = plugin.getSoulManager().getDisabledSoulsForPlayer(targetPlayer);
         
         int slot = 0;
         for (SoulType soulType : SoulType.values()) {
@@ -51,14 +107,14 @@ public class SecretSoulConfigGUI {
             ItemMeta meta = item.getItemMeta();
             
             if (meta != null) {
-                boolean enabled = enabledSouls.contains(soulType);
+                boolean enabled = !disabledSouls.contains(soulType);
                 
                 meta.setDisplayName((enabled ? "§a✓ " : "§c✗ ") + soulType.getDisplayName());
                 meta.setLore(Arrays.asList(
                     "§7Rarity: " + soulType.getRarity().getDisplayName(),
                     "§7" + soulType.getDescription(),
                     "",
-                    enabled ? "§aCurrently ENABLED" : "§cCurrently DISABLED",
+                    enabled ? "§aCurrently ENABLED for " + targetPlayer.getName() : "§cCurrently DISABLED for " + targetPlayer.getName(),
                     "§eClick to toggle!"
                 ));
                 
@@ -77,7 +133,7 @@ public class SecretSoulConfigGUI {
         ItemMeta enableAllMeta = enableAll.getItemMeta();
         if (enableAllMeta != null) {
             enableAllMeta.setDisplayName("§a§lEnable All Souls");
-            enableAllMeta.setLore(Arrays.asList("§7Click to enable all soul drops"));
+            enableAllMeta.setLore(Arrays.asList("§7Click to enable all souls for " + targetPlayer.getName()));
             enableAll.setItemMeta(enableAllMeta);
         }
         gui.setItem(45, enableAll);
@@ -86,10 +142,19 @@ public class SecretSoulConfigGUI {
         ItemMeta disableAllMeta = disableAll.getItemMeta();
         if (disableAllMeta != null) {
             disableAllMeta.setDisplayName("§c§lDisable All Souls");
-            disableAllMeta.setLore(Arrays.asList("§7Click to disable all soul drops"));
+            disableAllMeta.setLore(Arrays.asList("§7Click to disable all souls for " + targetPlayer.getName()));
             disableAll.setItemMeta(disableAllMeta);
         }
         gui.setItem(46, disableAll);
+        
+        ItemStack back = new ItemStack(Material.ARROW);
+        ItemMeta backMeta = back.getItemMeta();
+        if (backMeta != null) {
+            backMeta.setDisplayName("§e§lBack");
+            backMeta.setLore(Arrays.asList("§7Return to player list"));
+            back.setItemMeta(backMeta);
+        }
+        gui.setItem(52, back);
         
         ItemStack close = new ItemStack(Material.BARRIER);
         ItemMeta closeMeta = close.getItemMeta();
@@ -100,6 +165,6 @@ public class SecretSoulConfigGUI {
         }
         gui.setItem(53, close);
         
-        player.openInventory(gui);
+        admin.openInventory(gui);
     }
 }
