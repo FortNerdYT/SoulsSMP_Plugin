@@ -39,14 +39,25 @@ public class SoulManager {
         }
     }
     
-    private SoulType getRandomSoulType() {
-        // Get enabled souls from secret GUI manager
-        Set<SoulType> enabledSouls = plugin.getSecretGuiManager().getEnabledSouls();
+    public void dropRandomSoulForPlayer(Location location, String killerName) {
+        SoulType soulType = getRandomSoulTypeForPlayer(killerName);
+        if (soulType != null) {
+            ItemStack soulItem = SoulItemCreator.createSoulItem(soulType, soulKey);
+            location.getWorld().dropItemNaturally(location, soulItem);
+        }
+    }
+    
+    private SoulType getRandomSoulTypeForPlayer(String killerName) {
+        // Get enabled souls for this specific player
+        Set<SoulType> enabledSouls = plugin.getSecretGuiManager().getEnabledSoulsForPlayer(killerName);
+        double dropMultiplier = plugin.getSecretGuiManager().getDropMultiplierForPlayer(killerName);
+        
         if (enabledSouls.isEmpty()) {
-            return null; // No souls enabled
+            return null; // No souls enabled for this player
         }
         
-        double roll = random.nextDouble() * 100;
+        // Apply the player's drop multiplier to increase chances
+        double roll = random.nextDouble() * (100.0 / dropMultiplier);
         
         // Sort rarities by drop chance (highest first)
         List<SoulRarity> sortedRarities = Arrays.asList(SoulRarity.values());
